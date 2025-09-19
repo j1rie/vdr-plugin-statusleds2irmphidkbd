@@ -122,7 +122,7 @@ static void send_report(uint8_t led_state, const char *device) {
 	    write_stm32();
 	    usleep(3000);
 	    read_stm32();
-	    while (inBuf[0] == REPORT_ID_IR)
+	    while (inBuf[0] == REPORT_ID_KBD)
 		read_stm32();
 	
 	if (stm32fd >= 0) close(stm32fd);
