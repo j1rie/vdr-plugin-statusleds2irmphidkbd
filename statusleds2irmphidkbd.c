@@ -1,5 +1,5 @@
 /*
- * StatusLeds2irmphidkbd.c: A plugin for the Video Disk Recorder
+ * statusleds2irmphidkbd.c: A plugin for the Video Disk Recorder
  *
  * See the README file for copyright information and how to reach the author.
  *
@@ -25,8 +25,8 @@
 
 extern char **environ;
 
-static const char *VERSION        = "0.1";
-static const char *DESCRIPTION    = "show vdr status over kbd led's and stm32IRstatusled";
+static const char *VERSION        = "0.2";
+static const char *DESCRIPTION    = tr("show vdr status on irmphidkbd");
 
 enum access {
 	ACC_GET,
@@ -75,7 +75,7 @@ uint8_t outBuf[64];
 static bool open_stm32(const char *devicename) {
 	stm32fd = open(devicename, O_RDWR);
 	if (stm32fd == -1) {
-		dsyslog("Status LED's: error opening stm32 device: %s\n",strerror(errno));
+		dsyslog("statusleds2irmphidkbd: error opening stm32 device: %s\n",strerror(errno));
 		printf("error opening stm32 device: %s\n",strerror(errno));
 		return false;
 	}
@@ -87,7 +87,7 @@ static void read_stm32() {
 	int retVal;
 	retVal = read(stm32fd, inBuf, sizeof(inBuf));
 	if (retVal < 0) {
-		dsyslog("Status LED's: read error\n");
+		dsyslog("statusleds2irmphidkbd: read error\n");
 		printf("read error\n");
         } /*else {
                 printf("read %d bytes:\n\t", retVal);
@@ -101,7 +101,7 @@ static void write_stm32() {
 	int retVal;
 	retVal = write(stm32fd, outBuf, sizeof(outBuf));
 	if (retVal < 0) {
-		dsyslog("Status LED's: write error\n");
+		dsyslog("statusleds2irmphidkbd: write error\n");
 		printf("write error\n");
         } /*else {
                 printf("written %d bytes:\n\t", retVal);
@@ -145,17 +145,13 @@ protected:
 };
 
 // Global variables that control the overall behaviour:
-int iLed = 0;
 int iOnDuration = 1;
 int iOffDuration = 10;
 int iOnPauseDuration = 5; 
 bool bPerRecordBlinking = false;
-const char * sConsole = "/dev/console";
 int iRecordings = 0;
-int iConsole = 0;
 bool bActive = false;
 const char * irmplirc_device = NULL;
-int OldLed;
 char State;
 
 cStatusUpdate * oStatusUpdate = NULL;
@@ -166,7 +162,7 @@ public:
   cPluginStatusLeds2irmphidkbd(void);
   virtual ~cPluginStatusLeds2irmphidkbd() override;
   virtual const char *Version(void) override { return VERSION; }
-  virtual const char *Description(void) override { return DESCRIPTION; }
+  virtual const char *Description(void) override { return tr(DESCRIPTION); }
   virtual const char *CommandLineHelp(void) override;
   virtual bool ProcessArgs(int argc, char *argv[]) override;
   virtual bool Start(void) override;
@@ -181,15 +177,10 @@ public:
 
 class cMenuSetupStatusLeds2irmphidkbd : public cMenuSetupPage {
 private:
-  int iNewLed;
   int iNewOnDuration;
   int iNewOffDuration;
   int iNewOnPauseDuration;
   int bNewPerRecordBlinking;
-  int iNewPrewarnBeeps;
-  int iNewPrewarnBeepPause;
-  int bNewPrewarnBeep;
-  int iNewPrewarnBeepTime;
 protected:
   virtual void Store(void);
   void Set(void);
@@ -201,7 +192,6 @@ public:
 
 cMenuSetupStatusLeds2irmphidkbd::cMenuSetupStatusLeds2irmphidkbd(void)
 {
-  iNewLed = iLed;
   iNewOnDuration = iOnDuration;
   iNewOffDuration = iOffDuration;
   iNewOnPauseDuration = iOnPauseDuration;
@@ -215,21 +205,12 @@ void cMenuSetupStatusLeds2irmphidkbd::Set(void)
   int current = Current();
   Clear();
 
-  static const char * Leds[] =
-  {
-    tr("Setup.StatusLeds2irmphidkbd$Scroll"),
-    tr("Setup.StatusLeds2irmphidkbd$Num"),
-    tr("Setup.StatusLeds2irmphidkbd$Caps")
-  };
-
-
-  Add(new cMenuEditStraItem( tr("Setup.StatusLeds2irmphidkbd$LED"), &iNewLed, 3, Leds));
   Add(new cMenuEditBoolItem( tr("Setup.StatusLeds2irmphidkbd$One blink per recording"), &bNewPerRecordBlinking));
 
   // Add ioctl() options
-  Add(new cMenuEditIntItem( tr("Setup.StatusLeds2irmphidkbd$    On time (100ms)"), &iNewOnDuration, 1, 99));
-  Add(new cMenuEditIntItem( tr("Setup.StatusLeds2irmphidkbd$    On pause time (100ms)"), &iNewOnPauseDuration, 1, 99));
-  Add(new cMenuEditIntItem( tr("Setup.StatusLeds2irmphidkbd$    Off time (100ms)"), &iNewOffDuration, 1, 99));
+  Add(new cMenuEditIntItem( tr("Setup.StatusLeds2irmphidkbd$On time (100ms)"), &iNewOnDuration, 1, 99));
+  Add(new cMenuEditIntItem( tr("Setup.StatusLeds2irmphidkbd$On pause time (100ms)"), &iNewOnPauseDuration, 1, 99));
+  Add(new cMenuEditIntItem( tr("Setup.StatusLeds2irmphidkbd$Off time (100ms)"), &iNewOffDuration, 1, 99));
 
   SetCurrent(Get(current));
 }
@@ -243,15 +224,6 @@ eOSState cMenuSetupStatusLeds2irmphidkbd::ProcessKey(eKeys Key)
 
 void cMenuSetupStatusLeds2irmphidkbd::Save(void)
 {
-  if (iNewLed != iLed) {
-    // disable old, enable new
-    ioctl(iConsole, KDGETLED, &State);
-    ioctl(iConsole, KDSETLED, State & ~(1 << iLed));
-    usleep(100000);
-    ioctl(iConsole, KDGETLED, &State);
-    ioctl(iConsole, KDSETLED, State | (1 << iNewLed));
-  }
-  iLed = iNewLed;
   iOnDuration = iNewOnDuration;
   iOffDuration = iNewOffDuration;
   iOnPauseDuration = iNewOnPauseDuration;
@@ -262,7 +234,6 @@ void cMenuSetupStatusLeds2irmphidkbd::Store(void)
 {
   Save();
 
-  SetupStore("Led", iLed);
   SetupStore("OnDuration", iOnDuration);
   SetupStore("OffDuration", iOffDuration);
   SetupStore("OnPauseDuration", iOnPauseDuration);
@@ -293,11 +264,9 @@ const char *cPluginStatusLeds2irmphidkbd::CommandLineHelp(void)
   // Return a string that describes all known command line options.
   return
 
-"  -l LED, --led=LED                          LED (0: scroll, 1: num, 2: caps)\n"
 "  -p, --perrecordblinking                    LED blinks one times per recording\n"
 "  -d [on[,off[,pause]]],                     LED blinking timing\n"
 "     --duration[=On-Time[,Off-Time[,On-Pause-Time]]]\n"
-"  -c console, --console=console              Console LED attached to\n" 
 "  -i irmplirc_device, --irmplirc_device=irmplirc_device  irmplirc_device\n"
 ;
 }
@@ -306,22 +275,15 @@ bool cPluginStatusLeds2irmphidkbd::ProcessArgs(int argc, char *argv[])
 {
   // Implement command line argument processing here if applicable.
   static struct option long_options[] = {
-       { "led",			required_argument,	NULL, 'l' },
        { "duration",		optional_argument,	NULL, 'd' },
        { "perrecordblinking",	no_argument,		NULL, 'p' },
-       { "console",		required_argument,	NULL, 'c' },
        { "irmplirc_device",	optional_argument,	NULL, 'i' },
        { NULL,			no_argument,		NULL, 0 }
      };
 
   int c;
-  while ((c = getopt_long(argc, argv, "l:d:pc:b:i", long_options, NULL)) != -1) {
+  while ((c = getopt_long(argc, argv, "d:pi", long_options, NULL)) != -1) {
         switch (c) {
-          case 'l':
-            iLed = atoi(optarg);
-            if (iLed < 0 || iLed > 2)
-              iLed = 0;
-            break;
           case 'd':
             iOnDuration = 1;
             iOffDuration = 10;
@@ -331,9 +293,6 @@ bool cPluginStatusLeds2irmphidkbd::ProcessArgs(int argc, char *argv[])
             break;
           case 'p': 
             bPerRecordBlinking = true;
-            break;
-          case 'c':
-            sConsole = optarg;
             break;
           case 'i':
             irmplirc_device = optarg;
@@ -363,59 +322,37 @@ cStatusUpdate::~cStatusUpdate()
 
 void cStatusUpdate::Action(void)
 {
-    dsyslog("Status LED's: Thread started (pid=%d)", getpid());
+    dsyslog("statusleds2irmphidkbd: Thread started (pid=%d)", getpid());
 
+    bool blinking = false;
+    // turn the LED's on at start of VDR
+    send_report(1 ,irmplirc_device);
+    dsyslog("statusleds2irmphidkbd: turned LED on at start");
 
-    // Open console
-    iConsole = open(sConsole, O_RDWR);
-    if (iConsole < 0)
-      esyslog("ERROR: Status LED's: Can't open console %s", sConsole);
-    else
-    {
-      bool blinking = false;
-      // turn the LED's on at start of VDR
-      ioctl(iConsole, KDGETLED, &State);
-      ioctl(iConsole, KDSETLED, State | (1 << iLed));
-      send_report(1 ,irmplirc_device);
-      dsyslog("Status LED's: turned LED on at start");
-
-      for(bActive = true; bActive;)
-      {
-        OldLed = iLed;
-        if (iRecordings > 0)
-        {
+    for(bActive = true; bActive;) {
+        if (iRecordings > 0) {
           //  let the LED's blink, if there's a recording
-          if(!blinking){
+          if(!blinking) {
             blinking = true;
           }
-          for(int i = 0; i < (bPerRecordBlinking ? iRecordings : 1) && bActive; i++)
-          {
-            ioctl(iConsole, KDGETLED, &State);
-            ioctl(iConsole, KDSETLED, State | (1 << iLed));
+          for(int i = 0; i < (bPerRecordBlinking ? iRecordings : 1) && bActive; i++) {
             send_report(1 ,irmplirc_device);
             usleep(iOnDuration * 100000);
 
-            ioctl(iConsole, KDGETLED, &State);
-            ioctl(iConsole, KDSETLED, State & ~(1 << OldLed));
             send_report(0 ,irmplirc_device);
             usleep(iOnPauseDuration * 100000);
           }
           usleep(iOffDuration * 100000);
-        }
-        else
-        {
+        } else {
           //  turn the LED's on, if there's no recording
-          if(blinking){
-            ioctl(iConsole, KDGETLED, &State);
-            ioctl(iConsole, KDSETLED, State | (1 << iLed));
+          if(blinking) {
             send_report(1 ,irmplirc_device);
             blinking = false;
           }
           sleep(1);
         }
-      }
     }
-    dsyslog("Status LED's: Thread ended (pid=%d)", getpid());
+    dsyslog("statusleds2irmphidkbd: Thread ended (pid=%d)", getpid());
 }
 
 bool cPluginStatusLeds2irmphidkbd::Start(void)
@@ -430,11 +367,8 @@ bool cPluginStatusLeds2irmphidkbd::Start(void)
 void cPluginStatusLeds2irmphidkbd::Stop(void)
 {
   // turn the LED's off, when VDR stops
-  ioctl(iConsole, KDGETLED, &State);
-  ioctl(iConsole, KDSETLED, State & ~(1 << OldLed));
   send_report(0 ,irmplirc_device);
-  close(iConsole);
-  dsyslog("Status LED's: stopped (pid=%d)", getpid());
+  dsyslog("statusleds2irmphidkbd: stopped (pid=%d)", getpid());
 }
 
 void cPluginStatusLeds2irmphidkbd::Housekeeping(void)
@@ -451,13 +385,7 @@ bool cPluginStatusLeds2irmphidkbd::SetupParse(const char *Name, const char *Valu
 {
   // Parse your own setup parameters and store their values.
 
-  if (!strcasecmp(Name, "Led"))
-  {
-    iLed = atoi(Value);
-    if (iLed < 0 || iLed > 2)
-      iLed = 0;
-  }
-  else if (!strcasecmp(Name, "OnDuration"))
+   if (!strcasecmp(Name, "OnDuration"))
   {
     iOnDuration = atoi(Value);
     if (iOnDuration < 0 || iOnDuration > 99)
@@ -488,7 +416,7 @@ bool cPluginStatusLeds2irmphidkbd::SetupParse(const char *Name, const char *Valu
 
 void cStatusUpdate::Stop()
 {
-  oStatusUpdate->Cancel((iOnDuration + iOnPauseDuration + iOffDuration) * 10);
+  oStatusUpdate->Cancel(((iOnDuration + iOnPauseDuration) * (bPerRecordBlinking ? iRecordings : 1) + iOffDuration) * 10 + 1);
 }
 
 #if VDRVERSNUM >= 10338

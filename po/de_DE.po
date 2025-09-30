@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: vdr-StatusLeds2irmplirc 0.4\n"
 "Report-Msgid-Bugs-To: <see README>\n"
-"POT-Creation-Date: 2025-09-12 19:00+0200\n"
+"POT-Creation-Date: 2025-09-30 17:11+0200\n"
 "PO-Revision-Date: 2007-08-11 12:34+0200\n"
 "Last-Translator: German <vdr@linuxtv.org>\n"
 "Language-Team: German <vdr@linuxtv.org>\n"
@@ -14,50 +14,17 @@ msgstr ""
 "Content-Type: text/plain; charset=ISO-8859-15\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "Setup.StatusLeds2irmphidkbd$Scroll"
-msgstr ""
-
-msgid "Setup.StatusLeds2irmphidkbd$Num"
-msgstr ""
-
-msgid "Setup.StatusLeds2irmphidkbd$Caps"
-msgstr ""
-
-msgid "Setup.StatusLeds2irmphidkbd$LED"
-msgstr ""
+msgid "show vdr status on irmphidkbd"
+msgstr "VDR-Status ueber irmphidkbd anzeigen"
 
 msgid "Setup.StatusLeds2irmphidkbd$One blink per recording"
-msgstr ""
+msgstr "Pro Aufnahme einmal blinken"
 
-msgid "Setup.StatusLeds2irmphidkbd$    On time (100ms)"
-msgstr ""
+msgid "Setup.StatusLeds2irmphidkbd$On time (100ms)"
+msgstr "Einschaltdauer (100ms)"
 
-msgid "Setup.StatusLeds2irmphidkbd$    On pause time (100ms)"
-msgstr ""
+msgid "Setup.StatusLeds2irmphidkbd$On pause time (100ms)"
+msgstr "Pausendauer (100ms)"
 
-msgid "Setup.StatusLeds2irmphidkbd$    Off time (100ms)"
-msgstr ""
-
-#~ msgid "Setup.StatusLeds2irmplirc$Scroll"
-#~ msgstr "Rollen"
-
-#~ msgid "Setup.StatusLeds2irmplirc$Num"
-#~ msgstr "Num"
-
-#~ msgid "Setup.StatusLeds2irmplirc$Caps"
-#~ msgstr "Feststellen"
-
-#~ msgid "Setup.StatusLeds2irmplirc$LED"
-#~ msgstr "LED"
-
-#~ msgid "Setup.StatusLeds2irmplirc$One blink per recording"
-#~ msgstr "Pro Aufnahme einmal blinken"
-
-#~ msgid "Setup.StatusLeds2irmplirc$    On time (100ms)"
-#~ msgstr "    Eingeschaltet (100ms)"
-
-#~ msgid "Setup.StatusLeds2irmplirc$    Off time (100ms)"
-#~ msgstr "    Ausgeschaltet (100ms)"
-
-#~ msgid "Setup.StatusLeds2irmplirc$show vdr status over kbd led's and stm32IRstatusled"
-#~ msgstr "VDR-Status über Kbd-LED's und stm32IRstatusled anzeigen"
+msgid "Setup.StatusLeds2irmphidkbd$Off time (100ms)"
+msgstr "Ausschaltdauer (100ms)"
