@@ -14,8 +14,8 @@ msgstr ""
 "Content-Type: text/plain; charset=ISO-8859-15\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "show vdr status on irmphidkbd"
-msgstr "VDR-Status ueber irmphidkbd anzeigen"
+msgid "show vdr status on irmphidkbd device"
+msgstr "VDR-Status ueber irmphidkbd Empfänger anzeigen"
 
 msgid "Setup.StatusLeds2irmphidkbd$One blink per recording"
 msgstr "Pro Aufnahme einmal blinken"

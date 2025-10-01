@@ -25,8 +25,8 @@
 
 extern char **environ;
 
-static const char *VERSION        = "0.2";
-static const char *DESCRIPTION    = tr("show vdr status on irmphidkbd");
+static const char *VERSION        = "0.3";
+static const char *DESCRIPTION    = tr("show vdr status on irmphidkbd device");
 
 enum access {
 	ACC_GET,
@@ -71,6 +71,7 @@ enum report_id {
 static int stm32fd = -1;
 uint8_t inBuf[64];
 uint8_t outBuf[64];
+volatile bool stop = false;
 
 static bool open_stm32(const char *devicename) {
 	stm32fd = open(devicename, O_RDWR);
@@ -112,6 +113,8 @@ static void write_stm32() {
 }
 
 static void send_report(uint8_t led_state, const char *device) {
+	if (stop)
+	    return;
 	open_stm32(device != NULL ? device : "/dev/irmp_stm32_kbd");
         outBuf[0] = REPORT_ID_CONFIG_OUT;
 	outBuf[1] = STAT_CMD;
@@ -129,8 +132,6 @@ static void send_report(uint8_t led_state, const char *device) {
 }
 
 class cStatusUpdate : public cThread, public cStatus {
-private:
-    bool active;
 public:
     cStatusUpdate();
     ~cStatusUpdate();
@@ -139,7 +140,6 @@ public:
 #else
     virtual void Recording(const cDevice *Device, const char *Name);
 #endif
-    void Stop();
 protected:
     virtual void Action(void);
 };
@@ -150,14 +150,13 @@ int iOffDuration = 10;
 int iOnPauseDuration = 5; 
 bool bPerRecordBlinking = false;
 int iRecordings = 0;
-bool bActive = false;
 const char * irmplirc_device = NULL;
-char State;
 
 cStatusUpdate * oStatusUpdate = NULL;
 
 class cPluginStatusLeds2irmphidkbd : public cPlugin {
 private:
+  cStatusUpdate *oStatusUpdate;
 public:
   cPluginStatusLeds2irmphidkbd(void);
   virtual ~cPluginStatusLeds2irmphidkbd() override;
@@ -167,7 +166,6 @@ public:
   virtual bool ProcessArgs(int argc, char *argv[]) override;
   virtual bool Start(void) override;
   virtual void Stop(void) override;
-  virtual void Housekeeping(void) override;
   virtual const char *MainMenuEntry(void) override { return NULL; }
   virtual cMenuSetupPage *SetupMenu(void) override;
   virtual bool SetupParse(const char *Name, const char *Value) override;
@@ -247,16 +245,13 @@ cPluginStatusLeds2irmphidkbd::cPluginStatusLeds2irmphidkbd(void)
   // Initialize any member variables here.
   // DON'T DO ANYTHING ELSE THAT MAY HAVE SIDE EFFECTS, REQUIRE GLOBAL
   // VDR OBJECTS TO EXIST OR PRODUCE ANY OUTPUT!
+  oStatusUpdate = NULL;
 }
 
 cPluginStatusLeds2irmphidkbd::~cPluginStatusLeds2irmphidkbd()
 {
   // Clean up after yourself!
-  if (oStatusUpdate)
-  {
     delete oStatusUpdate;
-    oStatusUpdate = NULL;
-  }
 }
 
 const char *cPluginStatusLeds2irmphidkbd::CommandLineHelp(void)
@@ -310,14 +305,6 @@ cStatusUpdate::cStatusUpdate()
 
 cStatusUpdate::~cStatusUpdate()
 {
-  if (oStatusUpdate)
-  {
-    // Perform any cleanup or other regular tasks.
-    bActive = false;
-
-    // Stop threads
-    oStatusUpdate->Stop();
-  }
 }
 
 void cStatusUpdate::Action(void)
@@ -329,16 +316,15 @@ void cStatusUpdate::Action(void)
     send_report(1 ,irmplirc_device);
     dsyslog("statusleds2irmphidkbd: turned LED on at start");
 
-    for(bActive = true; bActive;) {
+    while(Running()) {
         if (iRecordings > 0) {
           //  let the LED's blink, if there's a recording
           if(!blinking) {
             blinking = true;
           }
-          for(int i = 0; i < (bPerRecordBlinking ? iRecordings : 1) && bActive; i++) {
+          for(int i = 0; i < (bPerRecordBlinking ? iRecordings : 1) && Running(); i++) {
             send_report(1 ,irmplirc_device);
             usleep(iOnDuration * 100000);
-
             send_report(0 ,irmplirc_device);
             usleep(iOnPauseDuration * 100000);
           }
@@ -352,7 +338,6 @@ void cStatusUpdate::Action(void)
           sleep(1);
         }
     }
-    dsyslog("statusleds2irmphidkbd: Thread ended (pid=%d)", getpid());
 }
 
 bool cPluginStatusLeds2irmphidkbd::Start(void)
@@ -368,11 +353,8 @@ void cPluginStatusLeds2irmphidkbd::Stop(void)
 {
   // turn the LED's off, when VDR stops
   send_report(0 ,irmplirc_device);
+  stop = true;
   dsyslog("statusleds2irmphidkbd: stopped (pid=%d)", getpid());
-}
-
-void cPluginStatusLeds2irmphidkbd::Housekeeping(void)
-{
 }
 
 cMenuSetupPage *cPluginStatusLeds2irmphidkbd::SetupMenu(void)
@@ -412,11 +394,6 @@ bool cPluginStatusLeds2irmphidkbd::SetupParse(const char *Name, const char *Valu
     return false;
 
   return true;
-}
-
-void cStatusUpdate::Stop()
-{
-  oStatusUpdate->Cancel(((iOnDuration + iOnPauseDuration) * (bPerRecordBlinking ? iRecordings : 1) + iOffDuration) * 10 + 1);
 }
 
 #if VDRVERSNUM >= 10338
