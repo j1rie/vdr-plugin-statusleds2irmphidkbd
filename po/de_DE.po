@@ -29,8 +29,8 @@ msgstr "Vorwarn Anzahl"
 msgid "Setup.StatusLeds2irmphidkbd$Pause (100ms)"
 msgstr "Vorwarn Pause (100ms)"
 
-msgid "Setup.StatusLeds2irmphidkbd$On time (100ms)"
-msgstr "Einschaltdauer (100ms)"
+msgid "Setup.StatusLeds2irmphidkbd$Prewarn On time (100ms)"
+msgstr "Vorwarn Einschaltdauer (100ms)"
 
 msgid "Setup.StatusLeds2irmphidkbd$One blink per recording"
 msgstr "Pro Aufnahme einmal blinken"
